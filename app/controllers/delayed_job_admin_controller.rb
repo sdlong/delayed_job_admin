@@ -36,9 +36,10 @@ class DelayedJobAdminController < ApplicationController
   end
 
   def delete
-    if job = Delayed::Job.find(params[:id])
-      job.attempts = 10
-      job.save
+    if job = Delayed::Job.find(params[:job_id])
+      #job.attempts = 10
+      #job.save
+      job.destroy
     end
     redirect_to :action => 'index'
   end
@@ -61,5 +62,19 @@ class DelayedJobAdminController < ApplicationController
     end
     redirect_to delayed_job_admin_path
   end
-
+  
+  def process_jobs
+     if !params[:jobs].nil?  
+    if params[:commit] == "reset selected jobs"
+     
+        jobs = Delayed::Job.where(:id => params[:jobs])
+        jobs.update_all(:attempts => 0, :locked_at => nil, :failed_at => nil, :locked_by => nil)
+     
+    elsif params[:commit] == "delete selected jobs"
+       jobs = jobs = Delayed::Job.where(:id => params[:jobs])
+       jobs.delete_all
+    end   
+    end   
+    redirect_to :back
+  end  
 end

@@ -1,8 +1,10 @@
-<%= render DelayedJobAdmin.header if DelayedJobAdmin.header %>
 
+<%= render DelayedJobAdmin.header if DelayedJobAdmin.header %>
+<%= form_tag process_jobs_delayed_job_admin_url,:method => :put, :id => "process-report" do %>
 <table id="jobs">
   <thead>
     <tr>
+	  <th width="3%" class="checkbox"><%= check_box_tag("master",1,false,{ :id => "select_all"}) %></th>
       <th>id</th>
       <th>priority</th>
       <th>attempts</th>
@@ -21,6 +23,11 @@
   <tbody>
     <% @jobs.each do |job| %>
       <tr class="job" id="job-<%= job.id %>">
+	    <% if !job.failed_at.nil? %>
+	      <td><%= check_box_tag("jobs[]",job.id,false,{ :class => "delayed-job", :onclick => "toggleMaster(this,'select_all')" }) %></td>
+	    <% else %>
+	      <td></td>
+	    <% end %>
         <td><%= job.id %></td>
         <td><%= job.priority %></td>
         <td><%= job.attempts %></td>
@@ -32,7 +39,7 @@
         <td><%= job.locked_by || '-' %></td>
         <td><%= format_time(job.created_at) %></td>
         <td><%= format_time(job.updated_at) %></td>
-        <td class="actions"><% if job.failed_at %><%= link_to "retry", retry_job_delayed_job_admin_path(:job_id => job.id) %><% else %><%= link_to "run now", run_job_now_delayed_job_admin_path(:job_id => job.id) %><% end %></td>
+        <td class="actions"><% if job.failed_at %><%= link_to "retry", retry_job_delayed_job_admin_path(:job_id => job.id) %>&nbsp;&nbsp;&nbsp;<%= link_to "delete", delete_job_delayed_job_admin_path(:job_id => job.id) %><% else %><%= link_to "run now", run_job_now_delayed_job_admin_path(:job_id => job.id) %><% end %></td>
       </tr>
       <tr class="job-details" id="job-details-<%= job.id %>">
         <td colspan="11">
@@ -47,12 +54,14 @@
     <% end %>
   </tbody>
 </table>
-
+<br/>
+<%= submit_tag "reset selected jobs" %>&nbsp;<%= submit_tag "delete selected jobs" %>
+<% end %>
 <%= will_paginate @jobs %>
 
 <p>
 <%= if !@status.nil? && !@status.empty? then "Delayed_job service status :#{@status}" end %>
-<%= link_to( @status == 'no' ?'Start' : 'Restart', delayed_job_admin_restart_path, :confirm => "Are you sure?", :title => "Restart delayed job?" ) if controller.respond_to?( 'delayed_job_admin_restart' ) %>
+<%= link_to( @status == 'no' ? 'Start' : 'Restart', delayed_job_admin_restart_path, :confirm => "Are you sure?", :title => "Restart delayed job?" ) if controller.respond_to?( 'delayed_job_admin_restart' ) %>
 <%= link_to( 'Refresh', delayed_job_admin_check_status_path ) if controller.respond_to?( 'delayed_job_admin_check_status' ) %>
 </p>
 
@@ -63,6 +72,7 @@
       function () {
         $(this).css("cursor", "pointer");
         $(this).addClass("hover");
+   	    
       },
       function () {
         $(this).removeClass("hover");
@@ -72,7 +82,19 @@
     $(".job td[class!='actions']").click(function(event){
       $(this).parents('tr').first().next("tr").toggle();
     });
-
+    
+    $.fn.toggleAll = function () {
+	  this.click(function () {
+	    if($(this).is(":checked")) {
+	      $(this).parents('table').find(':checkbox').attr('checked', this.checked);
+	    } else {
+	      $(this).parents('table').find(':checkbox').attr('checked', false);
+	    };
+	  });
+	};
+	
+	$('#select_all').toggleAll();
+   
   });
 </script>
 
